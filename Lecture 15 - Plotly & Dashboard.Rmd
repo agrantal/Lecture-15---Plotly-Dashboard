@@ -1,0 +1,94 @@
+---
+title: "Lecture 15 Plotly & Dashboard"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(p8105.datasets)
+library(plotly)
+
+set.seed(1)
+
+data(nyc_airbnb)
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  mutate(rating = review_scores_location / 2) %>%
+  select(boro = neighbourhood_group, neighbourhood, rating, price, room_type,
+         latitude, longitude) %>%
+  filter(!is.na(rating), 
+         boro == "Manhattan",
+         room_type == "Entire home/apt",
+         price %in% 100:500)  %>% 
+  sample_n(5000)
+```
+
+# Plotly: Line and Scatter Plots 
+unlike geom_ it is a "scatter" with different types that can be specified: "lines" = geom_point; "markers" = geom_line. It's interactive so you can hover over the plot to see the price and rating for each lat long point. 
+```{r}
+nyc_airbnb %>%
+  mutate(text_label = str_c("Price: $", price, '\nRating: ', rating)) %>% 
+  plot_ly(x = ~longitude, y = ~latitude, type = "scatter", mode = "markers",
+          alpha = 0.5, 
+          color = ~price,         #price is reflected by color 
+          text = ~text_label)
+```
+
+# Plotly: boxplots
+We want to plot only neighborhoods with the most rentals. Here we'll use boxplot function which doesn't have further specifications like "scatter" does. Interactive! you can hover to see the median price and the price per quartile for each neighborhood. 
+```{r}
+common_neighborhoods =
+  nyc_airbnb %>% 
+  count(neighbourhood, sort = TRUE) %>% 
+  top_n(8) %>% 
+  select(neighbourhood)
+## Selecting by n
+
+inner_join(nyc_airbnb, common_neighborhoods,
+             by = "neighbourhood") %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  plot_ly(y = ~price, color = ~neighbourhood, type = "box",
+          colors = "Set2")
+```
+
+# Plotly: barchart
+we need to use count before plotting because barcharts wants data in a specific format with one number or count per neighborhood. Interactive can be useful here when there's a lot of data and it'd be helpful to zoom to see the exact measure for each neighborhood.
+```{r}
+nyc_airbnb %>% 
+  count(neighbourhood) %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, n)) %>% 
+  plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood, type = "bar")
+```
+
+
+# ggplotly
+Can make ggplot interactive by using ggplotly!
+```{r}
+scatter_ggplot = 
+  nyc_airbnb %>%
+  ggplot(aes(x = longitude, y = latitude, color = price)) +
+  geom_point(alpha = 0.25) +
+  scale_color_viridis() +
+  coord_cartesian() +
+  theme_classic()
+
+ggplotly(scatter_ggplot)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
