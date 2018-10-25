@@ -3,6 +3,8 @@ title: "Lecture 15 Plotly & Dashboard"
 output: html_document
 ---
 
+# Interactive Plots!
+
 ```{r}
 library(tidyverse)
 library(viridis)
@@ -24,7 +26,7 @@ nyc_airbnb =
   sample_n(5000)
 ```
 
-# Plotly: Line and Scatter Plots 
+## Plotly: Line and Scatter Plots 
 unlike geom_ it is a "scatter" with different types that can be specified: "lines" = geom_point; "markers" = geom_line. It's interactive so you can hover over the plot to see the price and rating for each lat long point. 
 ```{r}
 nyc_airbnb %>%
@@ -35,8 +37,8 @@ nyc_airbnb %>%
           text = ~text_label)
 ```
 
-# Plotly: boxplots
-We want to plot only neighborhoods with the most rentals. Here we'll use boxplot function which doesn't have further specifications like "scatter" does. Interactive! you can hover to see the median price and the price per quartile for each neighborhood. 
+## Plotly: boxplots
+We want to plot only neighborhoods with the most rentals. Here we'll use boxplot function which doesn't have further specifications like "scatter" does. Interactive! you can hover to see the median price and the price per quartile for each neighborhood. it can also be useful for inspecting outliers. 
 ```{r}
 common_neighborhoods =
   nyc_airbnb %>% 
@@ -52,7 +54,7 @@ inner_join(nyc_airbnb, common_neighborhoods,
           colors = "Set2")
 ```
 
-# Plotly: barchart
+## Plotly: barchart
 we need to use count before plotting because barcharts wants data in a specific format with one number or count per neighborhood. Interactive can be useful here when there's a lot of data and it'd be helpful to zoom to see the exact measure for each neighborhood.
 ```{r}
 nyc_airbnb %>% 
@@ -62,9 +64,10 @@ nyc_airbnb %>%
 ```
 
 
-# ggplotly
+## ggplotly
 Can make ggplot interactive by using ggplotly!
 ```{r}
+#recreate the scatter plot we just made with plotly
 scatter_ggplot = 
   nyc_airbnb %>%
   ggplot(aes(x = longitude, y = latitude, color = price)) +
@@ -74,13 +77,55 @@ scatter_ggplot =
   theme_classic()
 
 ggplotly(scatter_ggplot)
+
+
+#recreate the boxplot we just made with plotly
+box_ggplot = 
+  inner_join(nyc_airbnb, common_neighborhoods,
+             by = "neighbourhood") %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  ggplot(aes(x = neighbourhood, y = price, fill = neighbourhood)) +
+  geom_boxplot() +
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplotly(box_ggplot)
 ```
 
+Takeaway: plotly is usually better for interactive plots bc it was built for that unlike ggplot. 
+
+## Flexdashboard
+
+Dashboard = a collection of related graphics (or tables, or other outputs) that are displayed in a structured way that’s easy to navigate
 
 
+Would need to create a new Rmarkdown that specifies "flexdashboard" as the file output type:
 
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
 
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
 
+The dashboard comes with a set amount of space for a set # of plots. 
+
+You can control layout by specifying columns and rows. Here is a 2-column layout with set column widths and the second column divided into 2 panels. 
+
+## Host dashboard online! 
+
+Coolest part: can host these interactive dashboards online! in order to do this... don't knit to the dashboard's YML header (its _site.yml file name) but rather knit it to an html using: 
+
+```{r}
+rmarkdown::render("dashboard_template.Rmd", output = "flex_dashboard")
+```
+
+...and then open it in a browser rather than opening it in the Rstudio viewer 
 
 
 
